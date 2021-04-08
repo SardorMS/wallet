@@ -8,10 +8,10 @@ type Money int64
 //the payment was made(auto, pharmacies, restaurants etc.).
 type PaymentCategory string
 
-//PaymentStatus - represents the status of the payments
+//PaymentStatus - represents the status of the payments.
 type PaymentStatus string
 
-//Predefined payment statuses
+//Predefined payment statuses.
 const (
 	PaymentStatusOK         PaymentStatus = "OK"
 	PaymentStatusFail       PaymentStatus = "FAIL"
@@ -27,10 +27,10 @@ type Payment struct {
 	Status    PaymentStatus
 }
 
-//Phone - phone number
+//Phone - phone number.
 type Phone string
 
-//
+//Account - represents information about the account.
 type Account struct {
 	ID      int64
 	Phone   Phone
