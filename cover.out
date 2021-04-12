@@ -43,7 +43,7 @@ github.com/SardorMS/wallet/pkg/wallet/service.go:167.91,169.16 2 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:178.2,187.22 4 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:169.16,171.3 1 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:191.80,192.39 1 1
-github.com/SardorMS/wallet/pkg/wallet/service.go:197.2,197.41 1 1
+github.com/SardorMS/wallet/pkg/wallet/service.go:197.2,197.33 1 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:192.39,193.32 1 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:193.32,195.4 1 1
 github.com/SardorMS/wallet/pkg/wallet/service.go:201.78,204.16 2 1
