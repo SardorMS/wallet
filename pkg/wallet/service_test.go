@@ -362,8 +362,8 @@ func TestService_FindFavoriteByID_notFound(t *testing.T) {
 		return
 	}
 
-	if err != ErrFavoritePaymentsNotFound {
-		t.Errorf("FindFavoriteByID(): must return ErrFavoritePaymentsNotFound, returned: %v", err)
+	if err != ErrFavoriteNotFound {
+		t.Errorf("FindFavoriteByID(): must return ErrFavoriteNotFound, returned: %v", err)
 		return
 	}
 }
@@ -413,8 +413,8 @@ func TestService_PayFromFavorite_notFound(t *testing.T) {
 		t.Errorf("PayFromFavorite(): must return error, returned nil")
 		return
 	}
-	if err != ErrFavoritePaymentsNotFound {
-		t.Errorf("PayFromFavorite(): must return ErrFavoritePaymentsNotFound, returned: %v", err)
+	if err != ErrFavoriteNotFound {
+		t.Errorf("PayFromFavorite(): must return ErrFavoriteNotFound, returned: %v", err)
 		return
 	}
 
