@@ -9,12 +9,12 @@ import (
 
 //Error variables.
 var (
-	ErrPhoneRegistered          = errors.New("phone already registered")
-	ErrAccountNotFound          = errors.New("account not found")
-	ErrAmountMustBePositive     = errors.New("amount must be greater than zero")
-	ErrNotEnoughBalance         = errors.New("balance is not anough")
-	ErrPaymentNotFound          = errors.New("payment not found")
-	ErrFavoritePaymentsNotFound = errors.New("favorite payment not found")
+	ErrPhoneRegistered      = errors.New("phone already registered")
+	ErrAccountNotFound      = errors.New("account not found")
+	ErrAmountMustBePositive = errors.New("amount must be greater than zero")
+	ErrNotEnoughBalance     = errors.New("balance is not anough")
+	ErrPaymentNotFound      = errors.New("payment not found")
+	ErrFavoriteNotFound     = errors.New("favorite payment not found")
 )
 
 //Service - service struct.
@@ -194,7 +194,7 @@ func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 			return favorite, nil
 		}
 	}
-	return nil, ErrFavoritePaymentsNotFound
+	return nil, ErrFavoriteNotFound
 }
 
 //PayFromFavorites - makes a payment from a specific favorite one
