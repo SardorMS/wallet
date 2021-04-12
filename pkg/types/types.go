@@ -36,3 +36,12 @@ type Account struct {
 	Phone   Phone
 	Balance Money
 }
+
+//Favorite - represents information about the favorite payment.
+type Favorite struct {
+	ID        string
+	AccountID int64
+	Name      string
+	Amount    Money
+	Category  PaymentCategory
+}

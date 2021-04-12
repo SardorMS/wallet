@@ -9,11 +9,12 @@ import (
 
 //Error variables.
 var (
-	ErrPhoneRegistered      = errors.New("phone already registered")
-	ErrAccountNotFound      = errors.New("account not found")
-	ErrAmountMustBePositive = errors.New("amount must be greater than zero")
-	ErrNotEnoughBalance     = errors.New("balance is not anough")
-	ErrPaymentNotFound      = errors.New("payment not found")
+	ErrPhoneRegistered          = errors.New("phone already registered")
+	ErrAccountNotFound          = errors.New("account not found")
+	ErrAmountMustBePositive     = errors.New("amount must be greater than zero")
+	ErrNotEnoughBalance         = errors.New("balance is not anough")
+	ErrPaymentNotFound          = errors.New("payment not found")
+	ErrFavoritePaymentsNotFound = errors.New("favorite payment not found")
 )
 
 //Service - service struct.
@@ -21,6 +22,7 @@ type Service struct {
 	nextAccountID int64
 	accounts      []*types.Account
 	payments      []*types.Payment
+	favorites     []*types.Favorite
 }
 
 //RegisterAccount - authentication processes method performing.
@@ -147,10 +149,72 @@ func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 		return nil, err
 	}
 
+	// account, err := s.FindAccountByID(payment.AccountID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//newPayment, err := s.Pay(account.ID, payment.Amount, payment.Category)
+
 	newPayment, err := s.Pay(payment.AccountID, payment.Amount, payment.Category)
 	if err != nil {
 		return nil, err
 	}
 
 	return newPayment, nil
+}
+
+//FavoritePayment - makes a favorite from a specific payment.
+func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorite, error) {
+	payment, err := s.FindPaymentByID(paymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	// account, err := s.FindAccountByID(payment.AccountID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	favoriteID := uuid.New().String()
+	favorite := &types.Favorite{
+		ID:        favoriteID,
+		AccountID: payment.AccountID, //account.ID
+		Name:      name,
+		Amount:    payment.Amount,
+		Category:  payment.Category,
+	}
+	s.favorites = append(s.favorites, favorite)
+	return favorite, nil
+}
+
+//FindFavoriteByID - method that find favorite payment by ID.
+func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
+	for _, favorite := range s.favorites {
+		if favorite.ID == favoriteID {
+			return favorite, nil
+		}
+	}
+	return nil, ErrFavoritePaymentsNotFound
+}
+
+//PayFromFavorites - makes a payment from a specific favorite one
+func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
+
+	favorite, err := s.FindFavoriteByID(favoriteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// account, err := s.FindAccountByID(favorite.AccountID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// payment, err := s.Pay(account.ID, favorite.Amount, favorite.Category)
+	payment, err := s.Pay(favorite.AccountID, favorite.Amount, favorite.Category)
+	if err != nil {
+		return nil, err
+	}
+	return payment, nil
+
 }
