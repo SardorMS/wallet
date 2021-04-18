@@ -231,11 +231,6 @@ func TestService_Repeat_success(t *testing.T) {
 
 	// trying to cancel the payment
 	payment := payments[0]
-	// err = s.Reject(payment.ID)
-	// if err != nil {
-	// 	t.Errorf("Reject(): can't reject payment error=%v", err)
-	// 	return
-	// }
 
 	// trying to repeat the payment
 	newPayment, err := s.Repeat(payment.ID)
