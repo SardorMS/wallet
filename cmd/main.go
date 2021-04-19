@@ -17,5 +17,5 @@ func main() {
 	svc.Deposit(3, 400)
 
 	svc.ExportToFile("../data/export.txt")
-	svc.ImportToFile("../data/export.txt")
+	svc.ImportFromFile("../data/export.txt")
 }

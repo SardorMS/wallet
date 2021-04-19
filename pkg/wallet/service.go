@@ -228,8 +228,8 @@ func (s *Service) ExportToFile(path string) error {
 	return nil
 }
 
-//ImportToFile - import(reads) from file to accounts.
-func (s *Service) ImportToFile(path string) error {
+//ImportFromFile - import(reads) from file to accounts.
+func (s *Service) ImportFromFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Print(err)
