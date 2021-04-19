@@ -260,10 +260,10 @@ func (s *Service) ImportToFile(path string) error {
 
 	data := string(content)
 	log.Println("data: ", data)
-	
+
 	acc := strings.Split(data, "|")
 	log.Println("acc: ", acc)
-	
+
 	// account := strings.TrimSuffix(data, "|")
 	// log.Println("account: ", account)
 
@@ -272,7 +272,6 @@ func (s *Service) ImportToFile(path string) error {
 
 	// accounts = accounts[:len(accounts) -1]
 	// log.Println("accounts after split: ", accounts)
-
 
 	for _, operation := range acc {
 
