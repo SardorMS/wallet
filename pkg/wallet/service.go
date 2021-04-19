@@ -207,6 +207,7 @@ func (s *Service) ExportToFile(path string) error {
 	}()
 
 	data := make([]byte, 0)
+	lastStr := ""
 	for _, account := range s.accounts {
 		text := []byte(
 			strconv.FormatInt(int64(account.ID), 10) + string(";") +
@@ -214,13 +215,16 @@ func (s *Service) ExportToFile(path string) error {
 				strconv.FormatInt(int64(account.Balance), 10) + string("|"))
 
 		data = append(data, text...)
+		str := string(data)
+		lastStr = strings.TrimSuffix(str, "|")
 	}
 
-	_, err = file.Write(data)
+	_, err = file.Write([]byte(lastStr))
 	if err != nil {
 		log.Print(err)
 		return err
 	}
+	log.Printf("%#v", file)
 	return nil
 }
 
@@ -256,13 +260,22 @@ func (s *Service) ImportToFile(path string) error {
 
 	data := string(content)
 	log.Println("data: ", data)
-	accounts := strings.Split(data, "|")
-	log.Println("accounts until split: ", accounts)
+	
+	acc := strings.Split(data, "|")
+	log.Println("acc: ", acc)
+	
+	// account := strings.TrimSuffix(data, "|")
+	// log.Println("account: ", account)
+
+	// acc := make([]string, len(account))
+	// log.Println("accounts until split:", accounts)
 
 	// accounts = accounts[:len(accounts) -1]
 	// log.Println("accounts after split: ", accounts)
 
-	for _, operation := range accounts {
+
+	for _, operation := range acc {
+
 		strAcc := strings.Split(operation, ";")
 		log.Println("strAcc:", strAcc)
 
