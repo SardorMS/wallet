@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -301,5 +302,55 @@ func (s *Service) ImportFromFile(path string) error {
 		s.accounts = append(s.accounts, account)
 		log.Print(account)
 	}
+	return nil
+}
+
+func (s *Service) Export(dir string) error {
+
+	if s.accounts != nil && len(s.accounts) > 0 {
+
+		accDir, err := filepath.Abs(dir)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		data := make([]byte, 0)
+		for _, account := range s.accounts {
+			text := []byte(
+				strconv.FormatInt(int64(account.ID), 10) + ";" +
+					string(account.Phone) + ";" +
+					strconv.FormatInt(int64(account.Balance), 10) + "\n")
+
+			data = append(data, text...)
+		}
+		
+		err = os.WriteFile(accDir + "/" + "accounts.dump", data, 0600)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		// file, err := os.Create(accountPath + "/data/accounts.dump")
+		// if err != nil {
+		// 	log.Print(err)
+		// 	return err
+		// }
+
+
+		// defer func() {
+		// 	if cerr := file.Close(); cerr != nil {
+		// 		log.Print(cerr)
+		// 	}
+		// }()
+
+		// _, err = file.Write([]byte(data))
+		// if err != nil {
+		// 	log.Print(err)
+		// 	return err
+		// }
+
+	}
+
 	return nil
 }

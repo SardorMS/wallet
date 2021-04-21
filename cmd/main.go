@@ -16,6 +16,7 @@ func main() {
 	svc.RegisterAccount("+999964564566")
 	svc.Deposit(3, 400)
 
-	svc.ExportToFile("../data/export.txt")
-	svc.ImportFromFile("../data/export.txt")
+	// svc.ExportToFile("../data/export.txt")
+	// svc.ImportFromFile("../data/export.txt")
+	svc.Export("../data")
 }
