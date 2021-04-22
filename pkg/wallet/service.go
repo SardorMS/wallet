@@ -183,7 +183,7 @@ func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 	return nil, ErrFavoriteNotFound
 }
 
-//PayFromFavorites - makes a payment from a specific favorite one
+//PayFromFavorites - makes a payment from a specific favorite one.
 func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	favorite, err := s.FindFavoriteByID(favoriteID)
 	if err != nil {
@@ -252,7 +252,7 @@ func (s *Service) ImportFromFile(path string) error {
 			break
 		}
 
-		if err != nil {
+		if err != nil {		
 			log.Print(err)
 			return err
 		}
@@ -305,6 +305,8 @@ func (s *Service) ImportFromFile(path string) error {
 	return nil
 }
 
+
+//Export - ...
 func (s *Service) Export(dir string) error {
 
 	if s.accounts != nil && len(s.accounts) > 0 {
@@ -324,33 +326,86 @@ func (s *Service) Export(dir string) error {
 
 			data = append(data, text...)
 		}
-		
-		err = os.WriteFile(accDir + "/" + "accounts.dump", data, 0600)
+
+		err = os.WriteFile(accDir+"/"+"accounts.dump", data, 0666)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+	}
+
+	if s.payments != nil && len(s.payments) > 0 {
+
+		payDir, err := filepath.Abs(dir)
 		if err != nil {
 			log.Print(err)
 			return err
 		}
 
-		// file, err := os.Create(accountPath + "/data/accounts.dump")
-		// if err != nil {
-		// 	log.Print(err)
-		// 	return err
-		// }
+		data := make([]byte, 0)
+		for _, payment := range s.payments {
+			text := []byte(
+				string(payment.ID) + ";" +
+					strconv.FormatInt(int64(payment.AccountID), 10) + ";" +
+					strconv.FormatInt(int64(payment.Amount), 10) + ";" +
+					string(payment.Category) + ";" +
+					string(payment.Status) + "\n")
 
+			data = append(data, text...)
+		}
 
-		// defer func() {
-		// 	if cerr := file.Close(); cerr != nil {
-		// 		log.Print(cerr)
-		// 	}
-		// }()
-
-		// _, err = file.Write([]byte(data))
-		// if err != nil {
-		// 	log.Print(err)
-		// 	return err
-		// }
-
+		err = os.WriteFile(payDir+"/"+"payments.dump", data, 0666)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
 	}
+
+	if s.favorites != nil && len(s.favorites) > 0 {
+
+		favDir, err := filepath.Abs(dir)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		data := make([]byte, 0)
+		for _, favorite := range s.favorites {
+			text := []byte(
+				string(favorite.ID) + ";" +
+					strconv.FormatInt(int64(favorite.AccountID), 10) + ";" +
+					string(favorite.Name) + ";" +
+					strconv.FormatInt(int64(favorite.Amount), 10) + ";" +
+					string(favorite.Category) + "\n")
+
+			data = append(data, text...)
+		}
+
+		err = os.WriteFile(favDir+"/"+"favorites.dump", data, 0666)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+//Import - ...
+func (s * Service) Import(dir string) error  {
+	accDir, err := filepath.Abs(dir)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+	file, err := os.ReadFile(accDir + "")
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+
 
 	return nil
 }
