@@ -327,7 +327,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(accDir+"/"+"accounts.dump", data, 0666)
+		err = os.WriteFile(accDir+"/accounts.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -355,7 +355,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(payDir+"/"+"payments.dump", data, 0666)
+		err = os.WriteFile(payDir+"/payments.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -383,7 +383,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(favDir+"/"+"favorites.dump", data, 0666)
+		err = os.WriteFile(favDir+"/favorites.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -417,7 +417,7 @@ func (s *Service) Import(dir string) error {
 	accData = strings.TrimSpace(accData)
 
 	accSlice := strings.Split(accData, "\n")
-	log.Print("accounts : ", accSlice)
+	log.Print("accSlice : ", accSlice)
 
 	for _, accOperation := range accSlice {
 
