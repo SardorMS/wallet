@@ -252,7 +252,7 @@ func (s *Service) ImportFromFile(path string) error {
 			break
 		}
 
-		if err != nil {		
+		if err != nil {
 			log.Print(err)
 			return err
 		}
@@ -305,10 +305,10 @@ func (s *Service) ImportFromFile(path string) error {
 	return nil
 }
 
-
-//Export - ...
+//Export - writes accounts, payments, favorites to a dump file(full_version).
 func (s *Service) Export(dir string) error {
 
+	//-----accounts (export)
 	if s.accounts != nil && len(s.accounts) > 0 {
 
 		accDir, err := filepath.Abs(dir)
@@ -334,6 +334,7 @@ func (s *Service) Export(dir string) error {
 		}
 	}
 
+	//-----payments (export)
 	if s.payments != nil && len(s.payments) > 0 {
 
 		payDir, err := filepath.Abs(dir)
@@ -361,6 +362,7 @@ func (s *Service) Export(dir string) error {
 		}
 	}
 
+	// -----favorites (export)
 	if s.favorites != nil && len(s.favorites) > 0 {
 
 		favDir, err := filepath.Abs(dir)
@@ -391,21 +393,175 @@ func (s *Service) Export(dir string) error {
 	return nil
 }
 
-//Import - ...
-func (s * Service) Import(dir string) error  {
-	accDir, err := filepath.Abs(dir)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
+//Import - import(reads) from dump file to accounts, payments and favorites(full_version).
+func (s *Service) Import(dir string) error {
 
-	file, err := os.ReadFile(accDir + "")
+	dir, err := filepath.Abs(dir)
 	if err != nil {
 		log.Print(err)
 		return err
 	}
 
+	if _, err = os.Stat(dir); os.IsNotExist(err) {
+		return err
+	}
 
+	// -----accounts (import)
+	accFile, err1 := os.ReadFile(dir + "/accounts.dump")
+	if err1 != nil {
+		log.Print(err1)
+		return err1
+	}
+
+	accData := string(accFile)
+	accData = strings.TrimSpace(accData)
+
+	accSlice := strings.Split(accData, "\n")
+	log.Print("accounts : ", accSlice)
+
+	for _, accOperation := range accSlice {
+
+		if len(accOperation) == 0 {
+			break
+		}
+		accStr := strings.Split(accOperation, ";")
+		log.Println("accStr:", accStr)
+
+		id, err := strconv.ParseInt(accStr[0], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		phone := types.Phone(accStr[1])
+		balance, err := strconv.ParseInt(accStr[2], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		accFind, _ := s.FindAccountByID(id)
+		if accFind != nil {
+			accFind.Phone = phone
+			accFind.Balance = types.Money(balance)
+		} else {
+			s.nextAccountID++
+			account := &types.Account{
+				ID:      id,
+				Phone:   phone,
+				Balance: types.Money(balance),
+			}
+			s.accounts = append(s.accounts, account)
+			log.Print(account)
+		}
+	}
+
+	// -----payments (import)
+	payFile, err2 := os.ReadFile(dir + "/payments.dump")
+	if err2 != nil {
+		log.Print(err2)
+		return err2
+	}
+
+	payData := string(payFile)
+	payData = strings.TrimSpace(payData)
+
+	paySlice := strings.Split(payData, "\n")
+	log.Print("paySlice : ", paySlice)
+
+	for _, payOperation := range paySlice {
+
+		if len(payOperation) == 0 {
+			break
+		}
+		payStr := strings.Split(payOperation, ";")
+		log.Println("payStr:", payStr)
+
+		id := payStr[0]
+		accountID, err := strconv.ParseInt(payStr[1], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		amount, err := strconv.ParseInt(payStr[2], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		category := types.PaymentCategory(payStr[3])
+		status := types.PaymentStatus(payStr[4])
+
+		payAcc, _ := s.FindPaymentByID(id)
+		if payAcc != nil {
+			payAcc.AccountID = accountID
+			payAcc.Amount = types.Money(amount)
+			payAcc.Category = category
+			payAcc.Status = status
+		} else {
+			payment := &types.Payment{
+				ID:        id,
+				AccountID: accountID,
+				Amount:    types.Money(amount),
+				Category:  category,
+				Status:    status,
+			}
+			s.payments = append(s.payments, payment)
+			log.Print(payment)
+		}
+	}
+
+	// -----favorites (import)
+	favFile, err3 := os.ReadFile(dir + "/favorites.dump")
+	if err3 != nil {
+		log.Print(err3)
+		return err3
+	}
+
+	favData := string(favFile)
+	favData = strings.TrimSpace(favData)
+
+	favSlice := strings.Split(favData, "\n")
+	log.Print("favSlice : ", favSlice)
+
+	for _, favOperation := range favSlice {
+
+		if len(favOperation) == 0 {
+			break
+		}
+		favStr := strings.Split(favOperation, ";")
+		log.Println("favStr:", favStr)
+
+		id := favStr[0]
+		accountID, err := strconv.ParseInt(favStr[1], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		name := favStr[2]
+		amount, err := strconv.ParseInt(favStr[3], 10, 64)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		category := types.PaymentCategory(favStr[4])
+
+		favAcc, _ := s.FindFavoriteByID(id)
+		if favAcc != nil {
+			favAcc.AccountID = accountID
+			favAcc.Name = name
+			favAcc.Amount = types.Money(amount)
+			favAcc.Category = category
+		} else {
+			favorite := &types.Favorite{
+				ID:        id,
+				AccountID: accountID,
+				Name:      name,
+				Amount:    types.Money(amount),
+				Category:  category,
+			}
+			s.favorites = append(s.favorites, favorite)
+			log.Print(favorite)
+		}
+	}
 
 	return nil
 }
