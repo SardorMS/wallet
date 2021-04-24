@@ -308,14 +308,11 @@ func (s *Service) ImportFromFile(path string) error {
 //Export - writes accounts, payments, favorites to a dump file(full_version).
 func (s *Service) Export(dir string) error {
 
+	path, _ := filepath.Abs(dir)
+	os.MkdirAll(dir, 0666)
+
 	//-----accounts (export)
 	if s.accounts != nil && len(s.accounts) > 0 {
-
-		accDir, err := filepath.Abs(dir)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
 
 		data := make([]byte, 0)
 		for _, account := range s.accounts {
@@ -327,7 +324,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(accDir+"/accounts.dump", data, 0666)
+		err := os.WriteFile(path+"/accounts.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -336,12 +333,6 @@ func (s *Service) Export(dir string) error {
 
 	//-----payments (export)
 	if s.payments != nil && len(s.payments) > 0 {
-
-		payDir, err := filepath.Abs(dir)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
 
 		data := make([]byte, 0)
 		for _, payment := range s.payments {
@@ -355,7 +346,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(payDir+"/payments.dump", data, 0666)
+		err := os.WriteFile(path+"/payments.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -364,12 +355,6 @@ func (s *Service) Export(dir string) error {
 
 	// -----favorites (export)
 	if s.favorites != nil && len(s.favorites) > 0 {
-
-		favDir, err := filepath.Abs(dir)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
 
 		data := make([]byte, 0)
 		for _, favorite := range s.favorites {
@@ -383,7 +368,7 @@ func (s *Service) Export(dir string) error {
 			data = append(data, text...)
 		}
 
-		err = os.WriteFile(favDir+"/favorites.dump", data, 0666)
+		err := os.WriteFile(path+"/favorites.dump", data, 0666)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -396,22 +381,20 @@ func (s *Service) Export(dir string) error {
 //Import - import(reads) from dump file to accounts, payments and favorites(full_version).
 func (s *Service) Import(dir string) error {
 
-	dir, err := filepath.Abs(dir)
-	if err != nil {
-		log.Print(err)
-		return err
-	}
-
-	if _, err = os.Stat(dir); os.IsNotExist(err) {
-		return err
+	var path string
+	if filepath.IsAbs(path) {
+		path, _ = filepath.Abs(dir)
+		// path = filepath.Dir(dir)
+	} else {
+		path = dir
 	}
 
 	// -----accounts (import)
-	accFile, err1 := os.ReadFile(dir + "/accounts.dump")
+	accFile, err1 := os.ReadFile(path + "/accounts.dump")
 	if err1 == nil {
 
 		accData := string(accFile)
-		// accData = strings.TrimSpace(accData)
+		accData = strings.TrimSpace(accData)
 
 		accSlice := strings.Split(accData, "\n")
 		log.Print("accounts : ", accSlice)
@@ -456,11 +439,11 @@ func (s *Service) Import(dir string) error {
 	}
 
 	// -----payments (import)
-	payFile, err2 := os.ReadFile(dir + "/payments.dump")
+	payFile, err2 := os.ReadFile(path + "/payments.dump")
 	if err2 == nil {
 
 		payData := string(payFile)
-		// payData = strings.TrimSpace(payData)
+		payData = strings.TrimSpace(payData)
 
 		paySlice := strings.Split(payData, "\n")
 		log.Print("paySlice : ", paySlice)
@@ -510,11 +493,11 @@ func (s *Service) Import(dir string) error {
 	}
 
 	// -----favorites (import)
-	favFile, err3 := os.ReadFile(dir + "/favorites.dump")
+	favFile, err3 := os.ReadFile(path + "/favorites.dump")
 	if err3 == nil {
 
 		favData := string(favFile)
-		// favData = strings.TrimSpace(favData)
+		favData = strings.TrimSpace(favData)
 
 		favSlice := strings.Split(favData, "\n")
 		log.Print("favSlice : ", favSlice)
@@ -563,5 +546,90 @@ func (s *Service) Import(dir string) error {
 		log.Println(err3)
 	}
 
+	return nil
+}
+
+//ExportAccountHistory - pulls out payments of a specific account.
+func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
+
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		return nil, ErrAccountNotFound
+	}
+
+	payments := []types.Payment{}
+	for _, payment := range s.payments {
+		if payment.AccountID == accountID {
+			payments = append(payments, *payment)
+		}
+	}
+
+	if len(payments) <= 0 || payments == nil {
+		return nil, ErrPaymentNotFound
+	}
+
+	return payments, nil
+}
+
+//HistoryToFiles - save all data(information about the payments) to files.
+func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
+
+	_, cerr := os.Stat(dir)
+	if os.IsNotExist(cerr) {
+		cerr = os.Mkdir(dir, 0777)
+	}
+	if cerr != nil {
+		return cerr
+	}
+
+	if len(payments) == 0 || payments == nil {
+		return nil
+	}
+	// log.Printf("payments = %v \n dir = %v \n records = %v", payments, dir, records)
+
+	data := make([]byte, 0)
+
+	if len(payments) > 0 && len(payments) <= records {
+		for _, payment := range payments {
+			text := []byte(
+				string(payment.ID) + ";" +
+					strconv.FormatInt(int64(payment.AccountID), 10) + ";" +
+					strconv.FormatInt(int64(payment.Amount), 10) + ";" +
+					string(payment.Category) + ";" +
+					string(payment.Status) + "\n")
+
+			data = append(data, text...)
+		}
+
+		path := dir + "/payments.dump"
+		err := os.WriteFile(path, data, 0777)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+	} else {
+		for i, payment := range payments {
+
+			text := []byte(
+				string(payment.ID) + ";" +
+					strconv.FormatInt(int64(payment.AccountID), 10) + ";" +
+					strconv.FormatInt(int64(payment.Amount), 10) + ";" +
+					string(payment.Category) + ";" +
+					string(payment.Status) + "\n")
+
+			data = append(data, text...)
+
+			if (i+1)%records == 0 || i == len(payments)-1 {
+
+				path := dir + "/payments" + strconv.Itoa((i/records)+1) + ".dump"
+				err := os.WriteFile(path, data, 0777)
+				if err != nil {
+					log.Print(err)
+					return err
+				}
+				data = nil
+			}
+		}
+	}
 	return nil
 }
