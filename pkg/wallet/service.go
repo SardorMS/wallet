@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/SardorMS/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -632,4 +633,43 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 		}
 	}
 	return nil
+}
+
+// SumPayments - summarizes payments.
+func (s *Service) SumPayments(goroutines int) types.Money {
+
+	if goroutines < 1 {
+		goroutines = 1
+	}
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	num := len(s.payments) / goroutines + 1
+	sum := types.Money(0)
+
+	for i := 0; i < goroutines; i++ {
+
+		wg.Add(1)
+		total := types.Money(0)
+
+		 func(val int) {
+			defer wg.Done()
+			lowIndex := val * num
+			highIndex := (val * num) + num
+
+			for j := lowIndex; j < highIndex; j++ {
+				if j > len(s.payments)-1 {
+					break
+				}
+				total += s.payments[j].Amount
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			sum += total
+		}(i)
+	}
+
+	wg.Wait()
+	return sum
 }
