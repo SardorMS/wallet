@@ -414,3 +414,48 @@ func TestService_PayFromFavorite_notFound(t *testing.T) {
 	}
 
 }
+
+func Transactions(s *testService) {
+	s.RegisterAccount("1111")
+	s.Deposit(1, 500)
+	s.Pay(1, 10, "food")
+	s.Pay(1, 10, "phone")
+	s.Pay(1, 15, "cafe")
+	s.Pay(1, 25, "auto")
+	s.Pay(1, 30, "restaurant")
+	s.Pay(1, 50, "auto")
+	s.Pay(1, 60, "bank")
+	s.Pay(1, 50, "bank")
+
+	s.RegisterAccount("2222")
+	s.Deposit(2, 200)
+	s.Pay(2, 40, "phone")
+
+	s.RegisterAccount("3333")
+	s.Deposit(3, 300)
+	s.Pay(3, 36, "auto")
+	s.Pay(3, 12, "food")
+	s.Pay(3, 25, "phone")
+}
+
+func TestService_SumPayments(t *testing.T) {
+	s := newTestService()
+	Transactions(s)
+	sum := s.SumPayments(2)
+	if sum != 363 {
+		t.Errorf("TestService_SumPayments(): sum=%v", sum)
+	}
+
+}
+
+func BenchmarkSumPayments(b *testing.B) {
+	s := newTestService()
+	Transactions(s)
+	want := types.Money(363)
+	for i := 0; i < b.N; i++ {
+		result := s.SumPayments(3)
+		if result != want {
+			b.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
+		}
+	}
+}
