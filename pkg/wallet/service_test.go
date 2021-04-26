@@ -234,7 +234,7 @@ func TestService_Reject_success(t *testing.T) {
 
 func TestService_Reject_notFound1(t *testing.T) {
 	s := newTestService()
-	
+
 	_, payments, _, err := s.addAccount(defaultTestAccount)
 	if err != nil {
 		t.Error(err)
@@ -684,5 +684,3 @@ func BenchmarkFilterPayments(b *testing.B) {
 		}
 	}
 }
-
-
