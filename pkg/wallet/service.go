@@ -657,30 +657,31 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	return sum
 }
 
-//FilterPayments -
+//FilterPayments - filters out payments.
 func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
+
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		return nil, err
+	}
 
 	if goroutines < 1 {
 		goroutines = 1
 	}
 
+	num := len(s.payments)/goroutines + 1
+
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 
-	num := len(s.payments)/goroutines + 1
-
-	_, err := s.FindAccountByID(accountID)
-	if err != nil {
-		return nil, ErrPaymentNotFound
-	}
-
 	payments := []types.Payment{}
+
 	for i := 0; i < goroutines; i++ {
 
 		wg.Add(1)
 		partOfPayment := []types.Payment{}
 
-		go func(val int) {
+		func(val int) {
 			defer wg.Done()
 			lowIndex := val * num
 			highIndex := (val * num) + num
