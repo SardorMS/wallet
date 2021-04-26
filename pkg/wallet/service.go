@@ -272,11 +272,11 @@ func (s *Service) ImportFromFile(path string) error {
 		log.Println("strAcc:", strAcc)
 
 		id, _ := strconv.ParseInt(strAcc[0], 10, 64)
-	
+
 		phone := types.Phone(strAcc[1])
 
 		balance, _ := strconv.ParseInt(strAcc[2], 10, 64)
-	
+
 		account := &types.Account{
 			ID:      id,
 			Phone:   phone,
@@ -628,7 +628,7 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 
-	num := len(s.payments) / goroutines + 1
+	num := len(s.payments)/goroutines + 1
 	sum := types.Money(0)
 
 	for i := 0; i < goroutines; i++ {
@@ -636,7 +636,7 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 		wg.Add(1)
 		total := types.Money(0)
 
-		 func(val int) {
+		go func(val int) {
 			defer wg.Done()
 			lowIndex := val * num
 			highIndex := (val * num) + num
@@ -655,4 +655,50 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 
 	wg.Wait()
 	return sum
+}
+
+//FilterPayments -
+func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
+
+	if goroutines < 1 {
+		goroutines = 1
+	}
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	num := len(s.payments)/goroutines + 1
+
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		return nil, ErrPaymentNotFound
+	}
+
+	payments := []types.Payment{}
+	for i := 0; i < goroutines; i++ {
+
+		wg.Add(1)
+		partOfPayment := []types.Payment{}
+
+		go func(val int) {
+			defer wg.Done()
+			lowIndex := val * num
+			highIndex := (val * num) + num
+
+			for j := lowIndex; j < highIndex; j++ {
+				if j > len(s.payments)-1 {
+					break
+				}
+				if s.payments[j].AccountID == accountID {
+					partOfPayment = append(partOfPayment, *s.payments[j])
+				}
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			payments = append(payments, partOfPayment...)
+		}(i)
+	}
+
+	wg.Wait()
+	return payments, nil
 }

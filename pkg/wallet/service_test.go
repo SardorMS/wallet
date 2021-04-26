@@ -70,6 +70,42 @@ func (s *Service) addAccount(data testAccount) (*types.Account, []*types.Payment
 	return account, payments, favorites, nil
 }
 
+func TestService_RegisterAccount(t *testing.T) {
+	s := newTestService()
+
+	s.RegisterAccount("+1111")
+	_, err := s.RegisterAccount("+1111")
+	if err == nil {
+		t.Error(err)
+	}
+}
+
+func TestService_Deposit(t *testing.T) {
+	s := newTestService()
+	s.RegisterAccount("+1111")
+	err := s.Deposit(0, 400)
+	if err == nil {
+		t.Error(err)
+	}
+}
+
+func TestService_Pay(t *testing.T) {
+	s := newTestService()
+	s.RegisterAccount("+1111")
+	s.Deposit(1, 40)
+	_, err := s.Pay(1, 100, "phone")
+	if err == nil {
+		t.Error(err)
+	}
+
+	s.RegisterAccount("+2222")
+	s.Deposit(2, 40)
+	_, err = s.Pay(0, 100, "auto")
+	if err == nil {
+		t.Error(err)
+	}
+}
+
 func TestService_FindAccountByID_success(t *testing.T) {
 	s := newTestService()
 	account, _, _, err := s.addAccount(defaultTestAccount)
@@ -196,9 +232,9 @@ func TestService_Reject_success(t *testing.T) {
 
 }
 
-func TestService_Reject_notFound(t *testing.T) {
+func TestService_Reject_notFound1(t *testing.T) {
 	s := newTestService()
-
+	
 	_, payments, _, err := s.addAccount(defaultTestAccount)
 	if err != nil {
 		t.Error(err)
@@ -218,7 +254,6 @@ func TestService_Reject_notFound(t *testing.T) {
 		t.Errorf("Reject(): must return ErrPaymentNotFound, returned: %v", err)
 		return
 	}
-
 }
 
 func TestService_Repeat_success(t *testing.T) {
@@ -604,3 +639,50 @@ func BenchmarkSumPayments(b *testing.B) {
 		}
 	}
 }
+
+func TestService_FilterPayments_success(t *testing.T) {
+	s := newTestService()
+	Transactions(s)
+
+	paymnet, err := s.FilterPayments(1, 0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := 8
+	result := len(paymnet)
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("INVALID: result_we_got %v, result_we_want %v", result, want)
+		return
+	}
+}
+func TestService_FilterPayments_not_Success(t *testing.T) {
+	s := newTestService()
+	Transactions(s)
+
+	_, err := s.FilterPayments(0, 0)
+	if err == nil {
+		t.Error(err)
+	}
+}
+
+func BenchmarkFilterPayments(b *testing.B) {
+	s := newTestService()
+	Transactions(s)
+
+	for i := 0; i < b.N; i++ {
+		paymnet, err := s.FilterPayments(1, 3)
+		if err != nil {
+			b.Error(err)
+		}
+
+		want := 8
+		result := len(paymnet)
+		if !reflect.DeepEqual(result, want) {
+			b.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
+			return
+		}
+	}
+}
+
+
