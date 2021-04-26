@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"os"
 
 	"github.com/SardorMS/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -458,7 +459,7 @@ func TestService_ExportToFile_success(t *testing.T) {
 		return
 	}
 
-	err = s.ExportToFile("hello.txt")
+	err = s.ExportToFile("data1/hello.txt")
 	if err != nil {
 		t.Error(err)
 		return
@@ -487,17 +488,111 @@ func TestService_ImportFromFile_success(t *testing.T) {
 	pay, _ := s.Pay(1, 100, "phone")
 	s.FavoritePayment(pay.ID, "my_phone")
 
-	err := s.ImportFromFile("hello.txt")
+	err := s.ImportFromFile("data1/hello.txt")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 }
-func TestService_ImportFromFile_noSuccess(t *testing.T) {
+func TestService_ImportFromFile_notFound(t *testing.T) {
 	s := newTestService()
 
 	err := s.ImportFromFile("")
 	if err == nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestService_Export(t *testing.T) {
+	s := newTestService()
+	_, payments, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	payment := payments[0]
+	_, err = s.FavoritePayment(payment.ID, "my favorite payment")
+	if err != nil {
+		t.Errorf("FavoritePayment(): error: %v", err)
+		return
+	}
+
+	err = s.Export("data")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestService_Import_success(t *testing.T) {
+	s := newTestService()
+
+	err := s.Import("data")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestService_Import_notFound1(t *testing.T) {
+
+	s := newTestService()
+
+	err := s.Import("")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+func TestService_Import_notFound2(t *testing.T) {
+
+	s := newTestService()
+
+	err := s.Import("")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestService_Import_Error(t *testing.T) {
+
+	s := newTestService()
+	_, payments, _, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	payment := payments[0]
+	_, err = s.FavoritePayment(payment.ID, "my favorite payment")
+	if err != nil {
+		t.Errorf("FavoritePayment(): error: %v", err)
+		return
+	}
+
+	err = s.Import("data")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestService_Import_emptyFiles(t *testing.T) {
+	s := newTestService()
+
+	file1, _ := os.Create("data1/accounts.dump")
+	defer file1.Close()
+
+	file2, _ := os.Create("data1/payments.dump")
+	defer file2.Close()
+
+	file3, _ := os.Create("data1/favorites.dump")
+	defer file3.Close()
+	
+	err := s.Import("data1")
+	if err != nil {
 		t.Error(err)
 		return
 	}
@@ -508,7 +603,7 @@ func Transactions(s *testService) {
 	s.Deposit(1, 500)
 	s.Pay(1, 10, "food")
 	s.Pay(1, 10, "phone")
-	s.Pay(1, 15, "cafe")
+	s.Pay(1, 15, "bank")
 	s.Pay(1, 25, "auto")
 	s.Pay(1, 30, "restaurant")
 	s.Pay(1, 50, "auto")
@@ -583,7 +678,7 @@ func TestService_HistoryToFiles_success1(t *testing.T) {
 		t.Error(err)
 	}
 }
-func TestService_HistoryToFiles_Success2(t *testing.T) {
+func TestService_HistoryToFiles_success2(t *testing.T) {
 	s := newTestService()
 	Transactions(s)
 
@@ -681,6 +776,39 @@ func BenchmarkFilterPayments(b *testing.B) {
 		if !reflect.DeepEqual(result, want) {
 			b.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
 			return
+		}
+	}
+}
+func TestService_FilterPaymentsByFn(t *testing.T) {
+	s := newTestService()
+	Transactions(s)
+
+	payment, err := s.FilterPaymentsByFn(FilterCategory, 0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := 3
+	result := len(payment)
+	if !reflect.DeepEqual(result, want) {
+		t.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
+	}
+}
+
+func BenchmarkFilterPaymentsByFn(b *testing.B) {
+	s := newTestService()
+	Transactions(s)
+
+	for i := 0; i < b.N; i++ {
+		payment, err := s.FilterPaymentsByFn(FilterCategory, 10)
+		if err != nil {
+			b.Error(err)
+		}
+
+		want := 3
+		result := len(payment)
+		if !reflect.DeepEqual(result, want) {
+			b.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
 		}
 	}
 }
