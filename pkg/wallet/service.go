@@ -204,7 +204,7 @@ func (s *Service) ExportToFile(path string) error {
 
 	defer func() {
 		if cerr := file.Close(); cerr != nil {
-			log.Print(err)
+			log.Print(cerr)
 		}
 	}()
 
@@ -367,8 +367,8 @@ func (s *Service) Import(dir string) error {
 
 	var path string
 	if filepath.IsAbs(path) {
-		path, _ = filepath.Abs(dir)
-		// path = filepath.Dir(dir)
+		// path, _ = filepath.Abs(dir)
+		path = filepath.Dir(dir)
 	} else {
 		path = dir
 	}
@@ -391,17 +391,9 @@ func (s *Service) Import(dir string) error {
 			accStr := strings.Split(accOperation, ";")
 			log.Println("accStr:", accStr)
 
-			id, err := strconv.ParseInt(accStr[0], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
+			id, _ := strconv.ParseInt(accStr[0], 10, 64)
 			phone := types.Phone(accStr[1])
-			balance, err := strconv.ParseInt(accStr[2], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
+			balance, _ := strconv.ParseInt(accStr[2], 10, 64)
 
 			accFind, _ := s.FindAccountByID(id)
 			if accFind != nil {
@@ -441,16 +433,8 @@ func (s *Service) Import(dir string) error {
 			log.Println("payStr:", payStr)
 
 			id := payStr[0]
-			accountID, err := strconv.ParseInt(payStr[1], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
-			amount, err := strconv.ParseInt(payStr[2], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
+			accountID, _ := strconv.ParseInt(payStr[1], 10, 64)
+			amount, _ := strconv.ParseInt(payStr[2], 10, 64)
 			category := types.PaymentCategory(payStr[3])
 			status := types.PaymentStatus(payStr[4])
 
@@ -495,20 +479,12 @@ func (s *Service) Import(dir string) error {
 			log.Println("favStr:", favStr)
 
 			id := favStr[0]
-			accountID, err := strconv.ParseInt(favStr[1], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
+			accountID, _ := strconv.ParseInt(favStr[1], 10, 64)
 			name := favStr[2]
-			amount, err := strconv.ParseInt(favStr[3], 10, 64)
-			if err != nil {
-				log.Print(err)
-				return err
-			}
+			amount, _ := strconv.ParseInt(favStr[3], 10, 64)
 			category := types.PaymentCategory(favStr[4])
-
 			favAcc, _ := s.FindFavoriteByID(id)
+
 			if favAcc != nil {
 				favAcc.AccountID = accountID
 				favAcc.Name = name
@@ -618,7 +594,7 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 	return nil
 }
 
-// SumPayments - summarizes payments.
+// SumPayments - summarizes payments using goroutines.
 func (s *Service) SumPayments(goroutines int) types.Money {
 
 	if goroutines < 1 {
@@ -657,7 +633,7 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	return sum
 }
 
-//FilterPayments - filters out payments.
+//FilterPayments - filters out payments by accountID using goroutines.
 func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
 
 	_, err := s.FindAccountByID(accountID)
@@ -681,7 +657,7 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 		wg.Add(1)
 		partOfPayment := []types.Payment{}
 
-		func(val int) {
+		go func(val int) {
 			defer wg.Done()
 			lowIndex := val * num
 			highIndex := (val * num) + num
@@ -702,4 +678,51 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 
 	wg.Wait()
 	return payments, nil
+}
+
+//FilterPaymentsByFn - filters out payments by any function.
+func (s *Service) FilterPaymentsByFn(
+	filter func(payment types.Payment) bool, goroutines int) ([]types.Payment, error) {
+
+	if goroutines < 1 {
+		goroutines = 1
+	}
+
+	num := len(s.payments)/goroutines + 1
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	payments := []types.Payment{}
+
+	for i := 0; i < goroutines; i++ {
+
+		wg.Add(1)
+		partOfPayment := []types.Payment{}
+
+		go func(val int) {
+			defer wg.Done()
+			lowIndex := val * num
+			highIndex := (val * num) + num
+
+			for j := lowIndex; j < highIndex; j++ {
+				if j > len(s.payments)-1 {
+					break
+				}
+				if filter(*s.payments[j]) {
+					partOfPayment = append(partOfPayment, *s.payments[j])
+				}
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			payments = append(payments, partOfPayment...)
+		}(i)
+	}
+
+	wg.Wait()
+	return payments, nil
+}
+
+func FilterCategory(payment types.Payment) bool {
+	return payment.Category == "bank"
 }
