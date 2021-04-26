@@ -266,34 +266,17 @@ func (s *Service) ImportFromFile(path string) error {
 	acc := strings.Split(data, "|")
 	log.Println("acc: ", acc)
 
-	// account := strings.TrimSuffix(data, "|")
-	// log.Println("account: ", account)
-
-	// acc := make([]string, len(account))
-	// log.Println("accounts until split:", accounts)
-
-	// accounts = accounts[:len(accounts) -1]
-	// log.Println("accounts after split: ", accounts)
-
 	for _, operation := range acc {
 
 		strAcc := strings.Split(operation, ";")
 		log.Println("strAcc:", strAcc)
 
-		id, err := strconv.ParseInt(strAcc[0], 10, 64)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
-
+		id, _ := strconv.ParseInt(strAcc[0], 10, 64)
+	
 		phone := types.Phone(strAcc[1])
 
-		balance, err := strconv.ParseInt(strAcc[2], 10, 64)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
-
+		balance, _ := strconv.ParseInt(strAcc[2], 10, 64)
+	
 		account := &types.Account{
 			ID:      id,
 			Phone:   phone,
