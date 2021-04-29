@@ -2,9 +2,9 @@ package wallet
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
-	"os"
 
 	"github.com/SardorMS/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -590,7 +590,7 @@ func TestService_Import_emptyFiles(t *testing.T) {
 
 	file3, _ := os.Create("data1/favorites.dump")
 	defer file3.Close()
-	
+
 	err := s.Import("data1")
 	if err != nil {
 		t.Error(err)
@@ -809,6 +809,40 @@ func BenchmarkFilterPaymentsByFn(b *testing.B) {
 		result := len(payment)
 		if !reflect.DeepEqual(result, want) {
 			b.Fatalf("INVALID: result_we_got %v, result_we_want %v", result, want)
+		}
+	}
+}
+
+func TestService_SumPaymentsWithProgress(t *testing.T) {
+
+}
+
+func BenchmarkSumPaymentsWithProgress(b *testing.B) {
+	s := newTestService()
+
+	n := 300
+	var payments []*types.Payment
+	for i := 0; i < n; i++ {
+		payment := &types.Payment{
+			AccountID: 1,
+			Amount:    1,
+			Category:  "phone",
+			Status:    types.PaymentStatusInProgress,
+		}
+
+		payments = append(payments, payment)
+	}
+
+	s.payments = payments
+	for i := 0; i < b.N; i++ {
+		result := types.Money(0)
+		for j := range s.SumPaymentsWithProgress() {
+			result += j.Result
+		}
+
+		want := types.Money(200)
+		if result != want {
+			b.Errorf("INVALID: result_we_got %v, result_we_want %v", result, want)
 		}
 	}
 }
