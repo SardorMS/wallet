@@ -32,6 +32,12 @@ type Service struct {
 	favorites     []*types.Favorite
 }
 
+//Progress - represent information about the progress
+type Progress struct {
+	Part   int
+	Result types.Money
+}
+
 //RegisterAccount - authentication processes method performing.
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
@@ -723,6 +729,80 @@ func (s *Service) FilterPaymentsByFn(
 	return payments, nil
 }
 
+// FilterCategory - puts the needed category.
 func FilterCategory(payment types.Payment) bool {
 	return payment.Category == "bank"
+}
+
+//SumPaymentsWithProgress - summarizes payments by adding them to the channel.
+func (s *Service) SumPaymentsWithProgress() <-chan Progress {
+
+	// if len(s.payments) == 0 {
+	// 	ch := make(chan Progress)
+	// 	close(ch)
+	// 	return ch
+	// }
+
+	size := 100_000
+
+	data := []types.Money{0}
+	for _, payment := range s.payments {
+		data = append(data, payment.Amount)
+	}
+
+	goroutines := len(data) + 1/size
+
+	// if goroutines < 1 {
+	// 	goroutines = 1
+	// }
+
+	channels := make([]<-chan Progress, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+
+		lowIndex := i * size
+		highIndex := (i + 1) + size
+		ch := make(chan Progress)
+
+		go func(ch chan<- Progress, data []types.Money) {
+			defer close(ch)
+			sum := types.Money(0)
+			for _, v := range data {
+				sum += v
+			}
+			ch <- Progress{
+				Part:   len(data),
+				Result: sum,
+			}
+		}(ch, data[lowIndex:highIndex]) //s.payment[low:high]
+		channels[i] = ch
+	}
+	return Merge(channels)
+}
+
+// Merge - creates a channel, in which messages from all channels appear,
+// which are sent in a slice.
+func Merge(channels []<-chan Progress) <-chan Progress {
+	wg := sync.WaitGroup{}
+	wg.Add(len(channels))
+
+	merged := make(chan Progress)
+
+	for _, ch := range channels {
+		// a goroutine is launched for each channel,
+		// which subtracts the values from this channel and throws it into the common.
+		go func(ch <-chan Progress) {
+			defer wg.Done()
+			// when the channel is closed, we will exit the loop.
+			for val := range ch {
+				merged <- val
+			}
+		}(ch)
+	}
+	// "closer" - waits for the rest of the goroutines, then closes the common channel.
+	go func() {
+		defer close(merged)
+		wg.Wait()
+	}()
+	return merged
 }
