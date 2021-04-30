@@ -743,16 +743,16 @@ func (s *Service) SumPaymentsWithProgress() <-chan Progress {
 	// 	return ch
 	// }
 
-	size := 100
+	size := 100_000
 
 	data := []types.Money{0}
 	for _, payment := range s.payments {
 		data = append(data, payment.Amount)
 	}
 
-	goroutines := len(data) / size // здесь проблема
+	goroutines := 1 + len(data)/size
 
-	if goroutines < 1 {
+	if goroutines <= 1 {
 		goroutines = 1
 	}
 
@@ -760,15 +760,14 @@ func (s *Service) SumPaymentsWithProgress() <-chan Progress {
 
 	for i := 0; i < goroutines; i++ {
 
-		//Здесь проблема в количеством data и size - НУЖНО УСЛОВИЕ ИНАЧЕ ГОРТИНА УВЕЛИЧИВАЕТ СУММУ
-		// lowIndex := i * size
-		// highIndex := (i + 1) + size
+		lowIndex := i * size
+		highIndex := (i + 1) * size
 
-		// if highIndex > len(data) {
-		// 	highIndex = len(data)
-		// }
+		if highIndex > len(data) {
+			highIndex = len(data)
+		}
+
 		ch := make(chan Progress)
-
 		go func(ch chan<- Progress, data []types.Money) {
 			defer close(ch)
 			sum := types.Money(0)
@@ -779,7 +778,7 @@ func (s *Service) SumPaymentsWithProgress() <-chan Progress {
 				Part:   len(data),
 				Result: sum,
 			}
-		}(ch, data)
+		}(ch, data[lowIndex:highIndex])
 		channels[i] = ch
 	}
 	return Merge(channels)
