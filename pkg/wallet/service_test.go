@@ -872,10 +872,11 @@ func TestService_SumPaymentsWithProgress_success2(t *testing.T) {
 func BenchmarkSumPaymentsWithProgress(b *testing.B) {
 	s := newTestService()
 
-	n := 1_000_000
+	n := 1_000
 	var payments []*types.Payment
 	for i := 0; i < n; i++ {
 		payment := &types.Payment{
+			ID:        "",
 			AccountID: 1,
 			Amount:    1,
 			Category:  "phone",
@@ -892,7 +893,7 @@ func BenchmarkSumPaymentsWithProgress(b *testing.B) {
 			result += j.Result
 		}
 
-		want := types.Money(1_000_000)
+		want := types.Money(1_000)
 		if result != want {
 			b.Errorf("INVALID: result_we_got %v, result_we_want %v", result, want)
 		}
