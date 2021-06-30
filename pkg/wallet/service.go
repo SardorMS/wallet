@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//Error variables.
+// Error variables.
 var (
 	ErrPhoneRegistered      = errors.New("phnone number already registered")
 	ErrAmountMustBePositive = errors.New("amount must be greater than zero")
@@ -24,7 +24,7 @@ var (
 	ErrFavoriteNotFound     = errors.New("favorite not found")
 )
 
-//Service - service struct.
+// Service - service struct.
 type Service struct {
 	nextAccountID int64
 	accounts      []*types.Account
@@ -32,13 +32,13 @@ type Service struct {
 	favorites     []*types.Favorite
 }
 
-//Progress - represent information about the progress
+// Progress - represent information about the progress
 type Progress struct {
 	Part   int
 	Result types.Money
 }
 
-//RegisterAccount - authentication processes method performing.
+// RegisterAccount - authentication processes method performing.
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.Phone == phone {
@@ -57,7 +57,7 @@ func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	return account, nil
 }
 
-//FindAccountByID - method that find account by ID.
+// FindAccountByID - method that find account by ID.
 func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.ID == accountID {
@@ -89,7 +89,7 @@ func (s *Service) Deposit(accountID int64, amount types.Money) error {
 	return nil
 }
 
-//Pay - payments method.
+// Pay - payments method.
 func (s *Service) Pay(accountID int64, amount types.Money, category types.PaymentCategory) (*types.Payment, error) {
 	if amount <= 0 {
 		return nil, ErrAmountMustBePositive
@@ -123,7 +123,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 	return payment, nil
 }
 
-//FindPaymentByID - method that find payment by ID.
+// FindPaymentByID - method that find payment by ID.
 func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	for _, payment := range s.payments {
 		if payment.ID == paymentID {
@@ -133,7 +133,7 @@ func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	return nil, ErrPaymentNotFound
 }
 
-//Reject - method that returns payment in a accident of error.
+// Reject - method that returns payment in a accident of error.
 func (s *Service) Reject(paymentID string) error {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -149,7 +149,7 @@ func (s *Service) Reject(paymentID string) error {
 	return nil
 }
 
-//Repeat - repeats payment.
+// Repeat - repeats payment.
 func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -159,7 +159,7 @@ func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	return s.Pay(payment.AccountID, payment.Amount, payment.Category)
 }
 
-//FavoritePayment - makes a favorite from a specific payment.
+// FavoritePayment - makes a favorite from a specific payment.
 func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorite, error) {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorit
 	return favorite, nil
 }
 
-//FindFavoriteByID - method that find favorite payment by ID.
+// FindFavoriteByID - method that find favorite payment by ID.
 func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 	for _, favorite := range s.favorites {
 		if favorite.ID == favoriteID {
@@ -190,7 +190,7 @@ func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 	return nil, ErrFavoriteNotFound
 }
 
-//PayFromFavorites - makes a payment from a specific favorite one.
+// PayFromFavorites - makes a payment from a specific favorite one.
 func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	favorite, err := s.FindFavoriteByID(favoriteID)
 	if err != nil {
@@ -200,7 +200,7 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	return s.Pay(favorite.AccountID, favorite.Amount, favorite.Category)
 }
 
-//ExportToFile - writes accounts to a file.
+// ExportToFile - writes accounts to a file.
 func (s *Service) ExportToFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
@@ -236,7 +236,7 @@ func (s *Service) ExportToFile(path string) error {
 	return nil
 }
 
-//ImportFromFile - import(reads) from file to accounts.
+// ImportFromFile - import(reads) from file to accounts.
 func (s *Service) ImportFromFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
@@ -368,7 +368,7 @@ func (s *Service) Export(dir string) error {
 	return nil
 }
 
-//Import - import(reads) from dump file to accounts, payments and favorites(full_version).
+// Import - import(reads) from dump file to accounts, payments and favorites(full_version).
 func (s *Service) Import(dir string) error {
 
 	var path string
@@ -515,7 +515,7 @@ func (s *Service) Import(dir string) error {
 	return nil
 }
 
-//ExportAccountHistory - pulls out payments of a specific account.
+// ExportAccountHistory - pulls out payments of a specific account.
 func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
 
 	_, err := s.FindAccountByID(accountID)
@@ -537,7 +537,7 @@ func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error)
 	return payments, nil
 }
 
-//HistoryToFiles - save all data(information about the payments) to files.
+// HistoryToFiles - save all data(information about the payments) to files.
 func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
 
 	_, cerr := os.Stat(dir)
@@ -639,7 +639,7 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	return sum
 }
 
-//FilterPayments - filters out payments by accountID using goroutines.
+// FilterPayments - filters out payments by accountID using goroutines.
 func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
 
 	_, err := s.FindAccountByID(accountID)
@@ -686,7 +686,7 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 	return payments, nil
 }
 
-//FilterPaymentsByFn - filters out payments by any function.
+// FilterPaymentsByFn - filters out payments by any function.
 func (s *Service) FilterPaymentsByFn(
 	filter func(payment types.Payment) bool, goroutines int) ([]types.Payment, error) {
 
@@ -734,7 +734,7 @@ func FilterCategory(payment types.Payment) bool {
 	return payment.Category == "bank"
 }
 
-//SumPaymentsWithProgress - summarizes payments by adding them to the channel.
+// SumPaymentsWithProgress - summarizes payments by adding them to the channel.
 func (s *Service) SumPaymentsWithProgress() <-chan Progress {
 
 	// if len(s.payments) == 0 {
